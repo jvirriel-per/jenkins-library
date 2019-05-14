@@ -129,8 +129,6 @@ class NeoDeployTest extends BasePiperTest {
     @Test
     void extensionsAsStringTest() {
 
-        def originalAssertFileExists = StepAssertions.metaClass.static.assertFileExists
-
         def checkedExtensionFiles = []
 
         StepAssertions.metaClass.static.assertFileExists =
@@ -146,7 +144,7 @@ class NeoDeployTest extends BasePiperTest {
                 mtaExtensionDescriptors: 'myExtension.yml'
         )
 
-        StepAssertions.metaClass.static.assertFileExists = originalAssertFileExists
+        GroovySystem.metaClassRegistry.removeMetaClass(StepAssertions)
 
         assert checkedExtensionFiles.contains('myExtension.yml')
 
@@ -166,8 +164,6 @@ class NeoDeployTest extends BasePiperTest {
 
         thrown.expect(AbortException)
         thrown.expectMessage('Extensions are only supported for deploy mode \'MTA\'')
-
-        def originalAssertFileExists = StepAssertions.metaClass.static.assertFileExists
 
         StepAssertions.metaClass.static.assertFileExists =
             { Script step, String filePath ->
@@ -189,7 +185,7 @@ class NeoDeployTest extends BasePiperTest {
                     ],
             )
         } finally {
-            StepAssertions.metaClass.static.assertFileExists = originalAssertFileExists
+            GroovySystem.metaClassRegistry.removeMetaClass(StepAssertions)
         }
     }
 
