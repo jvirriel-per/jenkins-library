@@ -94,7 +94,11 @@ class NeoCommandHelper {
 
     private String extensions() {
         if(! this.extensions) return ''
-        ' --extensions ' + ((Iterable)this.extensions.stream().map { e -> "'${e}'"}.collect(toList())).join(',')
+        def quotedExtensions = []
+        for(def ext : this.extensions) {
+            quotedExtensions << "'${ext}'"
+        }
+        ' --extensions ' + ((Iterable)quotedExtensions).join(',')
     }
 
     private String mainArgs() {
