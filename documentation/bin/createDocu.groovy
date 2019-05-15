@@ -78,12 +78,15 @@ class TemplateHelper {
         t.trim()
     }
 
-    static createStageContentSection(Map stageSteps) {
+    static createStageContentSection(Map stepDescriptions) {
         def t = 'This stage comprises following steps which are activated depending on your use-case/configuration:\n\n'
 
-        t += '| step | step description |'
-        t += '| ---- | ---------------- |'
-        t += '| | |'
+        t += '| step | step description |\n'
+        t += '| ---- | ---------------- |\n'
+
+        stepDescriptions.each {step, description ->
+            t += "| [${step}](../steps/${step}.md) | ${description.trim()} |\n"
+        }
 
         return t.trim()
     }
@@ -578,14 +581,26 @@ stages.each {key, value ->
     stageDescriptors."${key}".name = value
     stageDescriptors."${key}".configConditions = stageConfig.stages.get(value)?.stepConditions
 
-    // prepare step descriptions and remove step keys from parameters
+    //identify step keys in stages
+    def stageStepKeys = Helper.getStageStepKeys(gse.createScript( "${key}.groovy", new Binding() ))
+
+    //System.err << "[INFO] Stage Step Keys: '${stageStepKeys}'.\n"
+
+    // prepare step descriptions
     stageDescriptors."${key}".stepDescriptions = [:]
     stageDescriptors."${key}".parameters.each {paramKey, paramValue ->
-        if (paramKey in stageDescriptors."${key}".stageStepKeys) {
-            stageDescriptors."${key}".stepDescriptions = "${paramValue.docu ?: ''}\n"
-            stageDescriptors."${key}".parameters.remove(key)
+
+        if (paramKey in stageStepKeys) {
+            stageDescriptors."${key}".stepDescriptions."${paramKey}" = "${paramValue.docu ?: ''}\n"
         }
     }
+
+    //remove details from parameter map
+    stageStepKeys.each {stepKey ->
+        stageDescriptors."${key}".parameters.remove(stepKey)
+    }
+
+
 }
 
 for(step in stepDescriptors) {
@@ -752,12 +767,6 @@ def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
     // end of method.
     def step = [parameters:[:], dependentConfig: [:]]
 
-    //handling of step keys in stages
-    def stageStepKeys = Helper.getStageStepKeys(gse.createScript( "${stepName}.groovy", new Binding() ))
-
-    if (stageStepKeys.size() > 0) {
-        step.stageStepKeys = stageStepKeys
-    }
     //
     // START special handling for 'script' parameter
     // ... would be better if there is no special handling required ...
